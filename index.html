@@ -1,0 +1,1050 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vendor Batch Edit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: Dice admin shell — compact left nav, vendor header + tab strip, dense cards; edits go to a draft with a sticky submit bar */
+:root{
+  --bg:#FFFFFF; --surface:#FFFFFF; --surface-2:#F5F5F9; --line:#E6E6EE; --line-strong:#CFCFDB;
+  --ink:#1D1D29; --ink-2:#55556A; --ink-3:#8A8A9C;
+  --accent:#5B5BE8; --accent-ink:#FFFFFF; --accent-soft:#EEEEFD; --accent-line:#C7C7F7;
+  --chg:#9A5B00; --chg-bg:#FFF5E1; --chg-line:#F0C46C;
+  --new:#1C7A4A; --new-bg:#E8F6EE; --new-line:#9AD6B4;
+  --err:#C0362C; --err-bg:#FDECEA; --err-line:#F0A8A1;
+  --shadow:0 1px 2px rgba(30,30,60,.06),0 10px 28px rgba(30,30,60,.12);
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --side:200px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  color-scheme:dark;
+  --bg:#13131B; --surface:#1A1A24; --surface-2:#232330; --line:#2D2D3C; --line-strong:#3D3D52;
+  --ink:#ECECF4; --ink-2:#B5B5C7; --ink-3:#8686A0;
+  --accent:#8C8CFF; --accent-ink:#10101A; --accent-soft:#25254A; --accent-line:#47478A;
+  --chg:#F3B85A; --chg-bg:#33270F; --chg-line:#7A5A1E;
+  --new:#6FD39C; --new-bg:#11301F; --new-line:#2D6A48;
+  --err:#FF8A80; --err-bg:#3A1714; --err-line:#7C302A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.45);
+}}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#13131B; --surface:#1A1A24; --surface-2:#232330; --line:#2D2D3C; --line-strong:#3D3D52;
+  --ink:#ECECF4; --ink-2:#B5B5C7; --ink-3:#8686A0;
+  --accent:#8C8CFF; --accent-ink:#10101A; --accent-soft:#25254A; --accent-line:#47478A;
+  --chg:#F3B85A; --chg-bg:#33270F; --chg-line:#7A5A1E;
+  --new:#6FD39C; --new-bg:#11301F; --new-line:#2D6A48;
+  --err:#FF8A80; --err-bg:#3A1714; --err-line:#7C302A;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:13px/1.45 var(--font);-webkit-font-smoothing:antialiased}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+svg{flex:none}
+
+/* Shell */
+.shell{display:grid;grid-template-columns:var(--side) 1fr;min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--line);padding:18px 12px 24px;position:sticky;top:0;height:100vh;overflow:auto;scrollbar-width:thin}
+.org-logo{width:30px;height:30px;border-radius:50%;background:var(--surface-2);display:grid;place-items:center;font-size:7px;font-weight:700;color:var(--accent);border:1px solid var(--line)}
+.side h2{margin:10px 0 0;font-size:12.5px;font-weight:600}
+.side .who{color:var(--ink-3);font-size:10.5px}
+.side-icons{display:flex;gap:6px;margin:10px 0 14px}
+.side-icons span{width:26px;height:26px;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;color:var(--ink-2)}
+.nav-group{font-size:10px;color:var(--ink-2);margin:12px 6px 4px}
+.nav a{display:flex;align-items:center;gap:9px;padding:6px 6px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:12px}
+.nav a svg{color:var(--ink-2)}
+.nav a .chev{margin-left:auto}
+.nav a:hover{background:var(--surface-2)}
+.nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent);font-weight:500}
+.nav a[aria-current="page"] svg{color:var(--accent)}
+
+.main{min-width:0;padding:18px clamp(16px,2.4vw,36px) 120px}
+.v-head{display:flex;gap:10px;align-items:flex-start}
+.back{width:26px;height:26px;border-radius:50%;border:0;background:transparent;display:grid;place-items:center;color:var(--ink);margin-top:2px}
+.back:hover{background:var(--surface-2)}
+.v-title{flex:1;min-width:0}
+.v-title h1{margin:0;font-size:18px;font-weight:700;letter-spacing:-.005em;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.v-meta{display:flex;gap:16px;flex-wrap:wrap;color:var(--ink-2);font-size:11px;margin-top:4px}
+.v-meta span{display:inline-flex;gap:5px;align-items:center}
+
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap;line-height:1.5}
+.pill-edit{background:var(--chg-bg);color:var(--chg);border:1px solid var(--chg-line)}
+.pill-default{background:var(--accent-soft);color:var(--accent);font-weight:500;font-size:10px}
+.pill-new{background:var(--new-bg);color:var(--new);border:1px solid var(--new-line)}
+.pill-off{background:var(--surface-2);color:var(--ink-3);border:1px solid var(--line)}
+.pill-ok{background:var(--new-bg);color:var(--new);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.pill-warn{background:var(--err-bg);color:var(--err);font-size:9.5px;text-transform:uppercase;letter-spacing:.05em}
+.pill-editing{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent-line)}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:32px;padding:6px 14px;border-radius:6px;border:1px solid var(--line-strong);background:var(--surface);font-size:12.5px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-2)}
+.btn-primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink);font-weight:600}
+.btn-primary:hover{background:var(--accent);filter:brightness(1.07)}
+.btn-outline{border-color:var(--accent);color:var(--accent);background:var(--surface)}
+.btn-outline:hover{background:var(--accent-soft)}
+.btn-ghost{border-color:transparent;background:transparent}
+.btn-danger{color:var(--err);border-color:var(--err-line)}
+.btn-sm{min-height:24px;padding:2px 9px;font-size:11px;border-radius:4px;gap:4px}
+.btn-key{min-height:24px;padding:2px 9px;font-size:11px;border-radius:3px;border:1px solid var(--ink);background:var(--surface);font-weight:500;position:relative}
+.btn-key:hover{background:var(--surface-2)}
+.btn-key.is-changed{border-color:var(--chg);background:var(--chg-bg);color:var(--chg)}
+.btn-key .dot{width:6px;height:6px;border-radius:50%;background:var(--chg)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.icon-btn{width:28px;height:28px;border-radius:6px;border:1px solid transparent;background:transparent;display:inline-grid;place-items:center;color:var(--ink-2)}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+
+/* Tabs */
+.tabs{display:flex;gap:2px;margin-top:16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:thin}
+.tab{position:relative;background:none;border:0;padding:6px 8px 8px;font-size:11.5px;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center;gap:5px}
+.tab:hover{color:var(--accent)}
+.tab[aria-selected="true"]{color:var(--accent);font-weight:500}
+.tab[aria-selected="true"]::after{content:"";position:absolute;left:4px;right:4px;bottom:-1px;height:2px;border-radius:2px 2px 0 0;background:var(--accent)}
+.tab .count{min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--chg-bg);color:var(--chg);border:1px solid var(--chg-line);font-size:9.5px;font-weight:700;display:inline-grid;place-items:center;font-variant-numeric:tabular-nums}
+.tab .count.open{background:var(--accent-soft);color:var(--accent);border-color:var(--accent-line)}
+
+.key-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+
+/* Banners */
+.banner{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px;padding:8px 12px;border-radius:6px;border:1px solid var(--accent-line);background:var(--accent-soft)}
+.banner p{margin:0;flex:1;min-width:220px;font-size:12px}
+.banner strong{font-weight:600}
+.banner.info{background:var(--surface);border-color:var(--line)}
+
+/* Cards */
+.stack{display:grid;gap:14px;margin-top:14px}
+.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;align-items:start}
+.col{display:grid;gap:14px;align-content:start;min-width:0}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:12px 14px 14px;min-width:0}
+.card.is-new{border-color:var(--new-line);box-shadow:inset 0 0 0 1px var(--new-line)}
+.card.is-off{opacity:.72}
+.card.editing{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.card-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-bottom:10px;margin-bottom:14px;border-bottom:1px solid var(--line);min-height:35px}
+.card-head h3{margin:0;font-size:13px;font-weight:500;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.card-head .grow{flex:1}
+.card-head .actions{display:flex;gap:6px;flex-wrap:wrap}
+.card-foot{display:flex;gap:6px;justify-content:flex-end;flex-wrap:wrap;margin-top:14px;padding-top:10px;border-top:1px solid var(--line)}
+.foot-note{font-size:11px;color:var(--ink-3);margin-right:auto;align-self:center}
+.card-note{font-size:11.5px;color:var(--ink-3);margin:0 0 12px}
+.empty-note{font-size:11.5px;color:var(--ink-3);margin:0}
+.sub-h{font-size:12px;font-weight:600;margin:16px 0 8px}
+
+.kv-grid{display:grid;gap:12px 24px;margin:0}
+.cols-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.cols-1{grid-template-columns:minmax(0,1fr)}
+.kv dt{font-size:10.5px;color:var(--ink-2);margin-bottom:2px;display:flex;align-items:center;gap:6px}
+.kv dd{margin:0;font-size:12px;overflow-wrap:anywhere}
+.kv.span-all,.field.span-all{grid-column:1/-1}
+.mono{font-variant-numeric:tabular-nums}
+.chg-dot{display:none;font-size:9px;font-weight:700;color:var(--chg);text-transform:uppercase;letter-spacing:.05em}
+.kv.chg .chg-dot,.field.is-changed .chg-dot{display:inline}
+.kv.chg dd mark,.cell-chg mark{background:var(--chg-bg);color:var(--ink);padding:0 5px;border-radius:3px;box-shadow:inset 0 0 0 1px var(--chg-line)}
+.was{display:none;align-items:center;gap:5px;font-size:10.5px;color:var(--ink-3);min-width:0;margin-top:3px}
+.was s{color:var(--ink-2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:26ch}
+.was button{border:0;background:none;color:var(--accent);font-size:10.5px;font-weight:600;padding:1px 3px;border-radius:3px}
+.kv .was,.cell-chg .was,.field.is-changed .was{display:flex}
+
+/* Editable fields */
+.field{display:flex;flex-direction:column;gap:3px;min-width:0;position:relative}
+.field label{font-size:10.5px;color:var(--ink-2);display:flex;align-items:center;gap:6px;min-height:16px}
+.field .ctl{width:100%;min-height:30px;padding:5px 8px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);font-size:12px;transition:border-color .15s,box-shadow .15s}
+.field textarea.ctl{min-height:64px;resize:vertical;line-height:1.4}
+.field .ctl:hover{border-color:var(--ink-3)}
+.field .ctl:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.field .ctl.up{text-transform:uppercase}
+.field .ctl[readonly]{background:var(--surface-2);color:var(--ink-3);border-style:dashed;cursor:not-allowed}
+.field .ctl-static{display:flex;align-items:center;gap:8px;justify-content:space-between;background:var(--surface-2);border-style:dashed;color:var(--ink-2)}
+.field.is-changed .ctl{border-color:var(--chg-line);background:var(--chg-bg)}
+.field.is-changed .ctl:focus{box-shadow:0 0 0 3px var(--chg-line)}
+.field.has-error .ctl{border-color:var(--err);background:var(--err-bg)}
+.err-msg{display:none;font-size:10.5px;color:var(--err)}
+.field.has-error .err-msg{display:block}
+.hint{font-size:10.5px;color:var(--ink-3)}
+
+/* Tags table */
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th{font-size:10.5px;font-weight:600;color:var(--ink-2);text-align:left;padding:8px 12px;background:var(--surface-2);border-bottom:1px solid var(--line)}
+td{padding:8px 12px;border-bottom:1px solid var(--line);vertical-align:top;font-size:12px}
+tr:last-child td{border-bottom:0}
+td.val{overflow-wrap:anywhere;max-width:620px}
+td .clip{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+tr.is-new td{background:var(--new-bg)}
+tr.is-del td{background:var(--err-bg)}
+tr.is-del td .ro{text-decoration:line-through;color:var(--ink-3)}
+tr.is-chg td{background:var(--chg-bg)}
+tr.is-editing td{background:var(--accent-soft)}
+td .pill{margin-left:6px;vertical-align:1px}
+.row-actions{display:flex;gap:6px;justify-content:flex-end}
+
+.menu-wrap{position:relative}
+.menu{position:absolute;right:0;top:calc(100% + 4px);min-width:170px;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow);padding:4px;z-index:20;display:grid}
+.menu.left{left:0;right:auto}
+.menu button{text-align:left;border:0;background:none;padding:7px 10px;border-radius:5px;font-size:12px}
+.menu button:hover,.menu button:focus-visible{background:var(--surface-2)}
+.menu .danger{color:var(--err)}
+.menu .menu-label{font-size:10.5px;color:var(--ink-3);padding:5px 10px 3px}
+.kebab{border:1px solid var(--line-strong);width:24px;height:24px}
+.kebab[aria-expanded="true"]{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+
+/* Audit logs */
+.au-bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.au-bar .ctl{min-height:28px;padding:4px 8px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);font-size:12px}
+.au-bar .ctl:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+.au-bar input.ctl{width:min(260px,100%)}
+.au-bar .au-sum{margin-left:auto;font-size:11.5px;color:var(--ink-3)}
+.au-batch{border:1px solid var(--line);border-radius:6px;background:var(--surface);overflow:hidden}
+.au-head{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--surface-2)}
+.au-head .who{flex:1;min-width:220px}
+.au-head b{font-size:12.5px;font-weight:600}
+.au-head .meta{font-size:11px;color:var(--ink-3);margin-top:1px}
+.au-head .rsn{font-size:11.5px;color:var(--ink-2);margin-top:3px}
+.au-id{font-size:10.5px;color:var(--ink-3);font-variant-numeric:tabular-nums}
+.au-batch table{min-width:680px;table-layout:fixed}
+.au-batch td{font-size:11.5px;padding:7px 14px}
+.au-batch th{padding:6px 14px}
+.au-batch .old{color:var(--ink-3);text-decoration:line-through;overflow-wrap:anywhere}
+.au-batch .new{background:var(--chg-bg);padding:0 5px;border-radius:3px;overflow-wrap:anywhere}
+.au-batch .new.add{background:var(--new-bg);color:var(--new)}
+.au-batch .new.del{background:var(--err-bg);color:var(--err)}
+.au-batch td.v{max-width:320px;overflow-wrap:anywhere}
+.au-batch td.v .clip{display:-webkit-inline-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.pill-sys{background:var(--surface);color:var(--ink-2);border:1px solid var(--line)}
+.empty{margin-top:14px;padding:36px 20px;text-align:center;border:1px dashed var(--line-strong);border-radius:6px;color:var(--ink-2)}
+.empty h3{margin:0 0 4px;color:var(--ink);font-size:14px}
+.empty p{margin:0 auto;max-width:52ch;font-size:12px}
+
+/* Save bar */
+.savebar{position:fixed;left:var(--side);right:0;bottom:0;z-index:30;background:var(--surface);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(30,30,60,.08);padding:10px clamp(16px,2.4vw,36px) calc(10px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:14px;flex-wrap:wrap;transform:translateY(110%);transition:transform .22s ease-out}
+.savebar.show{transform:none}
+.sb-ico{width:30px;height:30px;border-radius:50%;background:var(--chg-bg);color:var(--chg);display:grid;place-items:center;border:1px solid var(--chg-line)}
+.sb-sum{flex:1;min-width:220px;display:flex;flex-direction:column;gap:1px}
+.sb-sum b{font-size:13px;font-weight:600}
+.sb-sum span{font-size:11.5px;color:var(--ink-3)}
+.sb-sum .bad{color:var(--err);font-weight:600}
+.sb-actions{display:flex;gap:8px;flex-wrap:wrap}
+.kbd{font-family:var(--mono);font-size:10px;padding:0 4px;border:1px solid currentColor;border-radius:3px;opacity:.7}
+
+/* Modal */
+.scrim{position:fixed;inset:0;z-index:50;background:rgba(15,15,30,.45);display:grid;place-items:center;padding:16px}
+.modal{background:var(--surface);color:var(--ink);border-radius:10px;box-shadow:var(--shadow);width:min(720px,100%);max-height:calc(100vh - 32px);display:flex;flex-direction:column;overflow:hidden}
+.modal.sm{width:min(440px,100%)}
+.m-head{padding:16px 18px 12px;display:flex;gap:10px;align-items:flex-start;border-bottom:1px solid var(--line)}
+.m-head h2{margin:0;font-size:15px;font-weight:600}
+.m-head p{margin:3px 0 0;color:var(--ink-2);font-size:12px}
+.m-head > div{flex:1}
+.m-body{padding:14px 18px;overflow:auto;display:grid;gap:14px}
+.m-foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.alert{border-radius:6px;padding:10px 12px;font-size:12px;display:grid;gap:4px}
+.alert.err{background:var(--err-bg);border:1px solid var(--err-line)}
+.alert.warn{background:var(--chg-bg);border:1px solid var(--chg-line)}
+.alert b{font-weight:600}
+.alert ul{margin:0;padding-left:16px;display:grid;gap:3px}
+.alert a{color:inherit;font-weight:600}
+.grp h4{margin:0 0 6px;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-2);display:flex;gap:6px;align-items:center}
+.diff{border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.diff-row{display:grid;grid-template-columns:minmax(130px,1fr) 2fr auto;gap:10px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line)}
+.diff-row:last-child{border-bottom:0}
+.diff-row .what{font-size:12px;font-weight:500}
+.diff-row .what small{display:block;color:var(--ink-3);font-weight:400;font-size:10.5px}
+.diff-row .vals{font-size:12px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:0}
+.diff-row .old{color:var(--ink-3);text-decoration:line-through;overflow-wrap:anywhere}
+.diff-row .new{font-weight:500;background:var(--chg-bg);padding:0 5px;border-radius:3px;overflow-wrap:anywhere}
+.diff-row .new.add{background:var(--new-bg);color:var(--new)}
+.diff-row .new.del{background:var(--err-bg);color:var(--err)}
+.arrow{color:var(--ink-3)}
+.reason label{font-size:11px;color:var(--ink-2);display:block;margin-bottom:4px}
+.reason textarea{width:100%;min-height:60px;padding:7px 9px;border:1px solid var(--line-strong);border-radius:5px;background:var(--surface);resize:vertical;font-size:12px}
+.reason textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+
+.toast{position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:60;background:var(--ink);color:var(--bg);padding:9px 14px;border-radius:8px;font-size:12px;box-shadow:var(--shadow);display:flex;gap:8px;align-items:center;max-width:calc(100% - 32px)}
+.spin{width:14px;height:14px;border:2px solid currentColor;border-right-color:transparent;border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+@media (max-width:1100px){.cols-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:960px){
+  .shell{grid-template-columns:1fr}
+  .side{display:none}
+  .savebar{left:0}
+  .grid-2{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:560px){
+  .cols-3,.cols-2{grid-template-columns:minmax(0,1fr)}
+  .diff-row{grid-template-columns:1fr auto}
+  .diff-row .vals{grid-column:1/-1;grid-row:2}
+  .sb-actions{width:100%}
+  .sb-actions .btn{flex:1}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="shell">
+  <aside class="side" aria-label="Main navigation">
+    <div class="org-logo">Shalina</div>
+    <h2>Admin - Shalina</h2>
+    <div class="who">test.shalina@dice.tech</div>
+    <div class="side-icons" aria-hidden="true">
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-2.9 1.2V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-2.9-1.2l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.7 1.7 0 0 0 3 14H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.2-2.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.7 1.7 0 0 0 10 3V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 2.9 1.2l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1A1.7 1.7 0 0 0 21 10h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1z"/></svg></span>
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></span>
+      <span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg></span>
+    </div>
+    <nav class="nav" id="nav"></nav>
+  </aside>
+
+  <main class="main">
+    <header class="v-head">
+      <button class="back" id="backBtn" aria-label="Back to vendor list">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="v-title">
+        <h1><span id="vName"></span><span class="pill pill-edit" id="editPill" hidden></span></h1>
+        <div class="v-meta">
+          <span><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21a8 8 0 0 1 16 0z"/></svg><span id="vTrade"></span></span>
+          <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M7 10h4M7 14h6"/></svg><span id="vCode"></span></span>
+          <span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg><span id="vEmail"></span></span>
+        </div>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist" id="tabs" aria-label="Vendor sections"></div>
+    <div id="bannerSlot"></div>
+    <section id="content"></section>
+  </main>
+</div>
+
+<div class="savebar" id="savebar" role="region" aria-label="Draft changes">
+  <span class="sb-ico" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg></span>
+  <div class="sb-sum">
+    <b id="sbCount" role="status" aria-atomic="true">No changes yet</b>
+    <span id="sbMeta"></span>
+  </div>
+  <div class="sb-actions">
+    <button class="btn btn-ghost" id="sbDiscard">Discard draft</button>
+    <button class="btn btn-primary" id="sbReview" disabled>Review &amp; apply all <span class="kbd" aria-hidden="true">⌘S</span></button>
+  </div>
+</div>
+
+<div id="modalSlot"></div>
+<div id="toastSlot"></div>
+
+<script>
+/* ---------- Sidebar ---------- */
+const IC={
+  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  user:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  doc:'<path d="M6 3h9l4 4v14H6z"/><path d="M9 12h7M9 16h5"/>',
+  box:'<path d="M3 7l9-4 9 4v10l-9 4-9-4z"/><path d="M3 7l9 4 9-4M12 11v10"/>',
+  card:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/>',
+  flow:'<path d="M4 4l16 16M20 4L4 20"/>',
+  scan:'<path d="M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16"/>',
+  db:'<ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/>'
+};
+const NAV=[["Dashboard","grid"],["#Hierarchy & Enforcement"],["Organisation","user",1],["Configuration Studio","box"],["Approval Requests","doc"],
+  ["#Travel & Expenses"],["Expenses","doc"],["Advances","card"],["#AP & Procurement"],["Vendor Management","user",0,1],["Product & Stock","box"],["Stock & Transfer","box"],
+  ["Invoice Management","doc"],["Procurement","user",1],["Contract Management","doc"],["Vendor Advance","card"],["Credit Note","doc"],["Debit Note","doc"],
+  ["#Treasury & Finances"],["Expense Vouchers","card"],["Account Payables","user"],["Employee Settlements","box"],["Vendor Settlements","user"],
+  ["#Payments"],["Payout","user"],["#Apps & Automation"],["Ticketing Engine","box"],["Route Tracker","box"],["Workflow Builder","flow"],["Master","scan"],["Scanner","scan"],["MarketPlace","db"],
+  ["#Others"],["Repository","db"],["Reports","doc"],["Export Wizard","doc"],["Audit Logs","box"]];
+document.getElementById("nav").innerHTML=NAV.map(([l,i,chev,on])=>l[0]==="#"?`<div class="nav-group">${l.slice(1).replace("&","&amp;")}</div>`
+  :`<a href="#"${on?' aria-current="page"':""}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true">${IC[i]}</svg>${l.replace("&","&amp;")}${chev?'<svg class="chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>':""}</a>`).join("");
+
+/* ---------- Data ---------- */
+const STATES=["ANDHRA PRADESH","DELHI","GUJARAT","HARYANA","KARNATAKA","KERALA","MADHYA PRADESH","MAHARASHTRA","PUNJAB","RAJASTHAN","TAMIL NADU","TELANGANA","UTTAR PRADESH","WEST BENGAL"];
+const SEED={
+  details:{name:"20CUBE GLOBAL LOGISTICS PRIVATE LIMITED",tradeName:"20CUBE GLOBAL LOGISTICS PRIVATE LIMITED",email:"poonam.parab@shalina.com",gstin:"33AACCZ8607K1Z0",gstinStatus:"Active",currency:"INR",phone:"7687657665",pan:"AACCZ8607K",vendorCode:"1004278",eInvoice:"No"},
+  msme:{registered:"Yes",udyam:"UDYAM-TN-02-0447860",category:"Micro"},
+  conn:{key1:"",key2:""},
+  coord:{lat:"",lng:""},
+  defaultBankId:"b1",
+  banks:[
+    {id:"b1",holder:"20CUBE GLOBAL LOGISTICS PRIVATE LIMITED",account:"103905004475",ifsc:"ICIC0001039",branch:"Madipakkam Branch",active:"Active",valid:"Yes",verified:"28-09-2026 11:49:40 AM"},
+    {id:"b2",holder:"20CUBE GLOBAL LOGISTICS PRIVATE LIMITED",account:"50200048127716",ifsc:"HDFC0001234",branch:"Guindy Branch",active:"Active",valid:"Yes",verified:"14-08-2026 04:12:05 PM"}
+  ],
+  defaultAddressId:"a1",
+  addresses:[
+    {id:"a1",line:"Plot 14 SP, SKCL Tech Square, Industrial Estate, 3rd floor, SKCL Tech Square, Guindy, Chennai, Chennai, Tamil Nadu, 600032",city:"CHENNAI",state:"TAMIL NADU",pin:"600032",country:"India",locationId:"",filterKey:"",active:"Active"},
+    {id:"a2",line:"No. 42, 2nd Floor, Outer Ring Road, Marathahalli, Bengaluru, Karnataka, 560037",city:"BENGALURU",state:"KARNATAKA",pin:"560037",country:"India",locationId:"",filterKey:"",active:"Active"}
+  ],
+  tags:[
+    {"id":"t1","key":"approval.details","value":"Onboarding link sent by admin"},
+    {"id":"t2","key":"ownerType","value":"ADMIN"},
+    {"id":"t3","key":"finance.id","value":"13198"},
+    {"id":"t4","key":"business_addresses","value":"{\"addresses\":[{\"id\":\"64faae1f-964b-4f25-b1d0-049a55cf82af\",\"title\":\"Plot 14 SP, SKCL Tech Square, Industrial Estate, 3rd floor, SKCL Tech Square, Guindy, Chennai, Chennai, Tamil Nadu, 600032\",\"address\":\"Plot 14 SP, SKCL Tech Square, Industrial Estate, 3rd floor, SKCL Tech Square, Guindy, Chennai, Chennai, Tamil Nadu, 600032\",\"city\":\"Chennai\",\"state\":\"Tamil Nadu\",\"country\":\"India\",\"pincode\":\"600032\",\"gstin\":\"33AACCZ8607K1Z0\",\"gstinValid\":true,\"businessAddress\":false,\"attrs\":{},\"forms\":[],\"customForms\":{},\"isActive\":true}]}"},
+    {"id":"t5","key":"ownerId","value":"13198"},
+    {"id":"t6","key":"conf_cont","value":""},
+    {"id":"t7","key":"account_group","value":"ZDMS-V1"},
+    {"id":"t8","key":"finance.time","value":"1790763998379"},
+    {"id":"t9","key":"rcmEnabled","value":"false"},
+    {"id":"t10","key":"postingDocNo","value":"1004278"},
+    {"id":"t11","key":"oldVendorCode","value":"CONTACT-SHAL-0000259"},
+    {"id":"t12","key":"pr_datecat","value":""},
+    {"id":"t13","key":"pan","value":"AACCZ8607K"},
+    {"id":"t14","key":"msmeType","value":"Micro"},
+    {"id":"t15","key":"previous_stage","value":"start"},
+    {"id":"t16","key":"workflow.start","value":"1790763702384"},
+    {"id":"t17","key":"payment_method","value":"T"},
+    {"id":"t18","key":"e_invoice_applicable","value":"false"},
+    {"id":"t19","key":"pan_valid","value":"true"},
+    {"id":"t20","key":"panCard","value":"https://static.eka.io/v2/VENDORnull/receipts/2026/09/efe6432d-b81f-4c43-9e6e-0c0a226d70d4.pdf"},
+    {"id":"t21","key":"udyamVerificationData","value":"{\"type_of_enterprise\":\"Micro\",\"major_activity\":\"Services\",\"date_of_udyam_registration\":\"30/01/2026\",\"enterprise_type\":[{\"srNo\":1.0,\"enterpriseType\":\"\",\"classificationYear\":\"\",\"ClassificationDate\":\"\"},{\"srNo\":2.0,\"enterpriseType\":\"\",\"classificationYear\":\"\",\"ClassificationDate\":\"\"}]}"},
+    {"id":"t22","key":"exemption_enddate_5q","value":""},
+    {"id":"t23","key":"pan_aadhaar_linked","value":"false"}
+  ]
+};
+const PREDEF=["payment.terms","vendor.segment","erp.sync_status","tds.section","msme.category"];
+const DEFS={
+  details:[
+    {k:"name",label:"Name",req:true,up:true},
+    {k:"tradeName",label:"Trade Name",up:true},
+    {k:"email",label:"Email",v:"email",req:true},
+    {k:"gstin",label:"GSTIN",v:"gstin",up:true,mono:true},
+    {k:"gstinStatus",label:"GSTIN Status",ro:true,hint:"Fetched from the GST portal"},
+    {k:"currency",label:"Currency",opts:["INR","USD","EUR","AED","GBP"]},
+    {k:"phone",label:"Phone Number",v:"phone",mono:true},
+    {k:"pan",label:"PAN",v:"pan",up:true,mono:true},
+    {k:"vendorCode",label:"Vendor Code",ro:true,mono:true,hint:"Assigned by ERP"},
+    {k:"eInvoice",label:"E-Invoice Applicable",opts:["Yes","No"]}
+  ],
+  msme:[
+    {k:"registered",label:"MSME Registered",opts:["No","Yes"]},
+    {k:"udyam",label:"Udyam Registration No.",v:"udyam",up:true,mono:true,ph:"UDYAM-TN-02-0447860"},
+    {k:"category",label:"Enterprise Category",opts:["","Micro","Small","Medium"]}
+  ],
+  conn:[{k:"key1",label:"Connection Key",mono:true,ph:"e.g. SHL-20CUBE-7F3K"},{k:"key2",label:"Connection Key 2",mono:true,ph:"e.g. SHL-20CUBE-ALT"}],
+  coord:[{k:"lat",label:"Latitude",v:"lat",mono:true,ph:"13.0067"},{k:"lng",label:"Longitude",v:"lng",mono:true,ph:"80.2206"}],
+  banks:[
+    {k:"holder",label:"Account Holder Name",req:true,up:true},
+    {k:"account",label:"Account Number",v:"account",req:true,mono:true},
+    {k:"ifsc",label:"IFSC Code",v:"ifsc",req:true,up:true,mono:true},
+    {k:"branch",label:"Branch Name"},
+    {k:"active",label:"Status",hidden:true}
+  ],
+  addresses:[
+    {k:"line",label:"Address",req:true,area:true},
+    {k:"city",label:"City",req:true,up:true},
+    {k:"state",label:"State",opts:STATES,req:true},
+    {k:"pin",label:"Pin Code",v:"pin",req:true,mono:true},
+    {k:"country",label:"Country",opts:["India"]},
+    {k:"locationId",label:"Location Id (Optional)"},
+    {k:"filterKey",label:"FilterKey (Optional)"},
+    {k:"active",label:"Status",hidden:true}
+  ],
+  tags:[{k:"key",label:"Key",req:true,mono:true},{k:"value",label:"Value",area:true}]
+};
+const VAL={
+  email:v=>/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)||"Enter a valid email, like accounts@vendor.com",
+  phone:v=>/^[6-9]\d{9}$/.test(v)||"Enter a 10-digit mobile number starting with 6–9",
+  gstin:v=>/^\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(v)||"GSTIN is 15 characters, like 33AACCZ8607K1Z0",
+  pan:v=>/^[A-Z]{5}\d{4}[A-Z]$/.test(v)||"PAN is 10 characters, like AACCZ8607K",
+  ifsc:v=>/^[A-Z]{4}0[A-Z0-9]{6}$/.test(v)||"IFSC is 11 characters with 0 in the 5th place, like ICIC0001039",
+  account:v=>/^\d{9,18}$/.test(v)||"Account number should be 9–18 digits",
+  pin:v=>/^[1-9]\d{5}$/.test(v)||"Pin code is 6 digits",
+  udyam:v=>/^UDYAM-[A-Z]{2}-\d{2}-\d{7}$/.test(v)||"Format: UDYAM-TN-02-0447860",
+  lat:v=>(/^-?\d+(\.\d+)?$/.test(v)&&Math.abs(+v)<=90)||"Latitude is a number between -90 and 90",
+  lng:v=>(/^-?\d+(\.\d+)?$/.test(v)&&Math.abs(+v)<=180)||"Longitude is a number between -180 and 180"
+};
+const TABS=[
+  {id:"analytics",label:"Analytics"},{id:"details",label:"Details"},{id:"bank",label:"Bank"},{id:"address",label:"Address"},
+  {id:"documents",label:"Documents"},{id:"tds",label:"TDS Certificate"},{id:"ledger",label:"Ledger"},{id:"other",label:"Other Details"},
+  {id:"tags",label:"Custom Tags"},{id:"contract",label:"Contract"},{id:"integration",label:"Integration Details"},
+  {id:"logs",label:"Validation Logs"},{id:"settings",label:"Settings"},{id:"msmelogs",label:"Msme Logs"},{id:"audit",label:"Audit Logs"}
+];
+const SEC_TAB={details:"details",msme:"details",conn:"details",coord:"details",defaultBankId:"bank",banks:"bank",defaultAddressId:"address",addresses:"address",tags:"tags"};
+const SEC_NAME={details:"Vendor Details",msme:"MSME Details",conn:"Connection Keys",coord:"Vendor Coordinate",banks:"Bank",addresses:"Address",tags:"Custom Tags"};
+const LS_KEY="dice-vendor-1363192-draft-v4";
+const LS_HIST="dice-vendor-1363192-audit-v1";
+// Applied batches, newest first. Each submit adds one entry with every change it applied.
+const HIST_SEED=[
+  {id:"AL-10422",ts:"2026-09-30T16:18:00",by:"Admin - Shalina",src:"Vendor profile",reason:"Vendor onboarding approved",changes:[
+    {kind:"field",section:"Vendor Details",label:"GSTIN Status",entity:"Vendor Details",from:"Pending",to:"Active"},
+    {kind:"field",section:"MSME Details",label:"Udyam Registration No.",entity:"MSME Details",from:"",to:"UDYAM-TN-02-0447860"},
+    {kind:"added",section:"Custom Tags",label:"Tag added",entity:"Custom Tags",to:"account_group = ZDMS-V1"}]},
+  {id:"AL-10398",ts:"2026-09-28T11:49:40",by:"System",src:"Penny-drop verification",reason:"",changes:[
+    {kind:"field",section:"Bank",label:"Valid Bank",entity:"Bank · ICIC ····4475",from:"Pending verification",to:"Yes"}]},
+  {id:"AL-10371",ts:"2026-09-27T10:02:00",by:"Poonam Parab",src:"Vendor onboarding form",reason:"Submitted by vendor",changes:[
+    {kind:"added",section:"Address",label:"Address added",entity:"Address",to:"CHENNAI"},
+    {kind:"added",section:"Bank",label:"Bank account added",entity:"Bank",to:"ICIC ····4475"},
+    {kind:"field",section:"Vendor Details",label:"Phone Number",entity:"Vendor Details",from:"",to:"7687657665"}]}
+];
+let auditLog=JSON.parse(JSON.stringify(HIST_SEED)),auSec="all",auQ="";
+try{const h=JSON.parse(localStorage.getItem(LS_HIST)||"null");if(Array.isArray(h))auditLog=h}catch(e){}
+const persistHist=()=>{try{localStorage.setItem(LS_HIST,JSON.stringify(auditLog))}catch(e){}};
+
+/* ---------- State ----------
+   saved   = live vendor record
+   draft   = saved + every card/row/dialog edit the user has saved (pending apply)
+   buffers = cards/rows/dialogs currently open for editing, keyed by unit ("details", "banks:b1", "tags:t3") */
+const clone=o=>JSON.parse(JSON.stringify(o));
+let saved=clone(SEED), draft=clone(SEED), buffers={}, touched=new Set(), showErr=new Set(), lastEdit=null, draftSavedAt=null, restored=false, tab="details", uid=100, modalUnit=null;
+
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const show=v=>(v===""||v==null)?"NA":v;
+const $=s=>document.querySelector(s);
+const plural=(n,w)=>`${n} ${w}${n===1?"":"s"}`;
+function unitInfo(key){const [a,id]=key.split(":");return id?{col:a,id,defs:DEFS[a],tab:SEC_TAB[a]}:{sec:a,defs:DEFS[a],tab:SEC_TAB[a]}}
+function objOf(root,key){const u=unitInfo(key);return u.col?root[u.col].find(x=>x.id===u.id):root[u.sec]}
+const isEditing=key=>key in buffers;
+const fid=(key,k)=>"f-"+key.replace(":","-")+"-"+k;
+const itemName=(col,it)=>col==="banks"?`${String(it.ifsc||"Bank").slice(0,4)} ····${String(it.account||"").slice(-4)}`:col==="addresses"?(it.city||"New address"):(it.key||"New tag");
+function unitLabel(key){const u=unitInfo(key);if(!u.col)return SEC_NAME[u.sec];const it=objOf(draft,key);return `${SEC_NAME[u.col]} · ${it?itemName(u.col,it):""}`}
+function visibleDefs(key,obj,only){
+  const u=unitInfo(key);
+  return u.defs.filter(f=>!f.hidden&&(!only||only.includes(f.k))&&!(u.sec==="msme"&&f.k!=="registered"&&obj.registered!=="Yes"));
+}
+
+/* ---------- Diff (draft vs saved) ---------- */
+function computeChanges(){
+  const out=[];
+  for(const sec of ["details","msme","conn","coord"])for(const f of DEFS[sec]){ if(f.ro)continue;
+    const a=saved[sec][f.k],b=draft[sec][f.k];
+    if((a??"")!==(b??""))out.push({kind:"field",unit:sec,sec,label:f.label,entity:SEC_NAME[sec],k:f.k,from:a,to:b});
+  }
+  for(const [key,col,noun] of [["defaultBankId","banks","bank"],["defaultAddressId","addresses","address"]]){
+    if(saved[key]!==draft[key]){
+      const it=draft[col].find(x=>x.id===draft[key]),old=saved[col].find(x=>x.id===saved[key]);
+      out.push({kind:"default",unit:key,sec:key,label:`Default ${noun}`,entity:SEC_NAME[col],from:old?itemName(col,old):"",to:it?itemName(col,it):""});
+    }
+  }
+  for(const col of ["banks","addresses","tags"])for(const it of draft[col]){
+    if(it._fresh)continue;
+    const o=saved[col].find(x=>x.id===it.id),unit=`${col}:${it.id}`;
+    if(!o){out.push({kind:"added",unit,sec:col,col,id:it.id,label:col==="tags"?"Tag added":col==="banks"?"Bank account added":"Address added",entity:SEC_NAME[col],to:col==="tags"?`${it.key} = ${it.value||"(empty)"}`:itemName(col,it)});continue}
+    if(it._deleted){out.push({kind:"removed",unit,sec:col,col,id:it.id,label:"Tag deleted",entity:SEC_NAME[col],from:`${o.key} = ${o.value||"(empty)"}`});continue}
+    for(const f of DEFS[col])if((o[f.k]??"")!==(it[f.k]??""))
+      out.push({kind:"field",unit,sec:col,k:f.k,label:f.k==="active"?"Status":f.label,entity:`${SEC_NAME[col]} · ${itemName(col,o)}`,from:o[f.k],to:it[f.k]});
+  }
+  return out;
+}
+const unitChanges=key=>computeChanges().filter(c=>c.unit===key);
+function revert(ch){
+  if(ch.kind==="field"){objOf(draft,ch.unit)[ch.k]=objOf(saved,ch.unit)[ch.k]??""}
+  else if(ch.kind==="default"){draft[ch.unit]=saved[ch.unit]}
+  else if(ch.kind==="added"){
+    draft[ch.col]=draft[ch.col].filter(x=>x.id!==ch.id);delete buffers[ch.unit];
+    if(ch.col==="banks"&&draft.defaultBankId===ch.id)draft.defaultBankId=saved.defaultBankId;
+    if(ch.col==="addresses"&&draft.defaultAddressId===ch.id)draft.defaultAddressId=saved.defaultAddressId;
+  }
+  else if(ch.kind==="removed"){delete objOf(draft,ch.unit)._deleted}
+}
+
+/* ---------- Validation (runs on the open buffer) ---------- */
+function fieldError(key,obj,f){
+  const v=(obj[f.k]??"").toString().trim(),u=unitInfo(key);
+  if(u.sec==="msme"&&f.k!=="registered"){if(obj.registered!=="Yes")return null;if(!v)return `${f.label} is required for MSME vendors`}
+  if(u.sec==="coord"&&!v&&(obj.lat||obj.lng))return `Enter both latitude and longitude`;
+  if(f.req&&!v)return `${f.label} is required`;
+  if(v&&f.v){const r=VAL[f.v](v);if(r!==true)return r}
+  if(u.col==="tags"&&f.k==="key"&&v&&draft.tags.some(t=>t.id!==u.id&&!t._deleted&&!t._fresh&&t.key.trim()===v))return "Another tag already uses this key";
+  return null;
+}
+function unitErrors(key){const b=buffers[key];return b?visibleDefs(key,b).filter(f=>!f.ro).map(f=>({f,msg:fieldError(key,b,f)})).filter(x=>x.msg):[]}
+function warnings(changes){
+  const w=[],d=draft.details;
+  if(VAL.gstin(d.gstin)===true&&VAL.pan(d.pan)===true&&d.gstin.slice(2,12)!==d.pan)w.push(`PAN <b>${esc(d.pan)}</b> doesn't match the PAN inside GSTIN <b>${esc(d.gstin)}</b>.`);
+  if(changes.some(c=>c.sec==="banks"&&(c.kind==="added"||["account","ifsc","holder"].includes(c.k))))w.push("Bank account changes trigger penny-drop re-verification. Payments to changed accounts are held until verified.");
+  if(changes.some(c=>c.unit==="details"&&c.k==="gstin"))w.push("GSTIN status will be re-fetched from the GST portal after applying.");
+  if(changes.some(c=>c.unit==="msme"))w.push("MSME changes are recorded in Msme Logs and change the 45-day payment rule for this vendor.");
+  return w;
+}
+
+/* ---------- Field rendering ---------- */
+function kvView(key,f){
+  const o=objOf(draft,key),s=objOf(saved,key),v=o[f.k]??"";
+  const chg=!!s&&!f.ro&&(s[f.k]??"")!==v;
+  return `<div class="kv${f.span?" span-all":""}${chg?" chg":""}"><dt>${f.label}<span class="chg-dot">Edited</span></dt>
+    <dd>${chg?`<mark>${esc(show(v))}</mark>`:esc(show(v))}</dd>
+    ${chg?`<div class="was">Was <s title="${esc(show(s[f.k]))}">${esc(show(s[f.k]))}</s><button type="button" data-undof="${key}|${f.k}">Undo</button></div>`:""}</div>`;
+}
+function fieldInput(key,f,bare){
+  const b=buffers[key],v=b[f.k]??"",id=fid(key,f.k),attrs=`id="${id}" data-unit="${key}" data-k="${f.k}"`;
+  let ctl;
+  if(f.opts)ctl=`<select class="ctl" ${attrs}>${f.opts.map(o=>`<option value="${esc(o)}" ${o===v?"selected":""}>${o===""?"Select…":esc(o)}</option>`).join("")}</select>`;
+  else if(f.area)ctl=`<textarea class="ctl" ${attrs}>${esc(v)}</textarea>`;
+  else ctl=`<input class="ctl${f.up?" up":""}" ${attrs} value="${esc(v)}" ${f.ro?"readonly":""} ${f.ph?`placeholder="${esc(f.ph)}"`:""} autocomplete="off" spellcheck="false">`;
+  return `<div class="field${f.span?" span-all":""}" data-fu="${key}" data-fk="${f.k}">
+    <label for="${id}"${bare?' class="sr"':""}>${f.label}${f.req?' <span aria-hidden="true" style="color:var(--err)">*</span>':""}<span class="chg-dot">Edited</span></label>
+    ${ctl}
+    ${f.ro&&f.hint?`<span class="hint">${f.hint}</span>`:""}
+    <div class="was">Was <s></s><button type="button" data-revbuf="${key}|${f.k}">Undo</button></div>
+    <div class="err-msg" id="${id}-err"></div>
+  </div>`;
+}
+function refreshField(el){
+  const key=el.dataset.fu,k=el.dataset.fk,f=unitInfo(key).defs.find(x=>x.k===k),b=buffers[key];if(!b)return;
+  const s=objOf(saved,key),changed=!!s&&!f.ro&&(s[k]??"")!==(b[k]??"");
+  el.classList.toggle("is-changed",changed);
+  if(changed){const x=el.querySelector(".was s");x.textContent=show(s[k]);x.title=show(s[k])}
+  const err=(showErr.has(key)||touched.has(key+"|"+k))?fieldError(key,b,f):null;
+  el.classList.toggle("has-error",!!err);
+  const em=el.querySelector(".err-msg");em.textContent=err||"";
+  const ctl=el.querySelector(".ctl");ctl.setAttribute("aria-invalid",err?"true":"false");
+  err?ctl.setAttribute("aria-describedby",em.id):ctl.removeAttribute("aria-describedby");
+}
+const refreshAllFields=()=>document.querySelectorAll("[data-fu]").forEach(refreshField);
+function fieldsGrid(key,cls,only){
+  const ed=isEditing(key),obj=ed?buffers[key]:objOf(draft,key);
+  return `<dl class="kv-grid ${cls}">${visibleDefs(key,obj,only).map(f=>ed?fieldInput(key,f):kvView(key,f)).join("")}</dl>`;
+}
+
+/* ---------- Card shell: Edit in view mode, Cancel / Save to draft while editing ---------- */
+const PENCIL=`<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75zM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75z"/></svg>`;
+const TRASH=`<svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 7h12l-1 14H7zM9 3h6l1 2h4v2H4V5h4z"/></svg>`;
+const PLUS=`<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>`;
+const XICON=`<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M18 6 6 18M6 6l12 12"/></svg>`;
+const editBtn=(key,label="Edit")=>`<button class="btn btn-sm btn-outline" data-edit="${key}" aria-label="${esc(label)} ${esc(unitLabel(key))}">${PENCIL}${label}</button>`;
+function cardShell({key,title,pills="",head="",body,foot="",cls=""}){
+  const ed=isEditing(key),n=unitChanges(key).length,o=objOf(draft,key),fresh=o&&o._fresh;
+  const footer=ed
+    ?`<div class="card-foot"><span class="foot-note">${fresh?"Adds this to your draft.":"Saves to your draft. Nothing goes live until you apply."}</span><button class="btn btn-sm" data-cancel="${key}">Cancel</button><button class="btn btn-sm btn-primary" data-save="${key}">Save to draft</button></div>`
+    :(foot||n)?`<div class="card-foot">${n?`<button class="btn btn-sm btn-ghost" data-undounit="${key}" style="margin-right:auto">Undo ${plural(n,"change")}</button>`:""}${foot}</div>`:"";
+  return `<div class="card ${cls}${ed?" editing":""}" id="card-${key.replace(":","-")}">
+    <div class="card-head"><h3 title="${esc(title)}">${esc(title)}</h3>${pills}
+      ${ed?`<span class="pill pill-editing">Editing</span>`:n?`<span class="pill pill-edit">${plural(n,"draft change")}</span>`:""}
+      <span class="grow"></span>${ed?"":`<div class="actions">${head}</div>`}</div>
+    ${body}${footer}
+  </div>`;
+}
+
+/* ---------- Header / tabs / banner / bar ---------- */
+const openEdits=()=>Object.keys(buffers);
+function renderHeader(){
+  $("#vName").textContent=saved.details.name;$("#vTrade").textContent=saved.details.tradeName;
+  $("#vCode").textContent=saved.details.vendorCode;$("#vEmail").textContent=saved.details.email;
+  const n=computeChanges().length,p=$("#editPill");p.hidden=!n;p.textContent=`Draft · ${plural(n,"change")}`;
+}
+function renderTabs(){
+  const ch=computeChanges(),open=openEdits();
+  $("#tabs").innerHTML=TABS.map(t=>{
+    const n=ch.filter(c=>SEC_TAB[c.sec]===t.id).length,o=open.filter(k=>unitInfo(k).tab===t.id).length;
+    const badge=o?`<span class="count open" title="Edit in progress" aria-label="${plural(o,"edit")} in progress">${PENCIL}</span>`:n?`<span class="count" aria-label="${plural(n,"draft change")}">${n}</span>`:"";
+    return `<button class="tab" role="tab" id="tab-${t.id}" aria-selected="${t.id===tab}" data-tab="${t.id}">${t.label}${badge}</button>`;
+  }).join("");
+}
+function renderBanner(){
+  const n=computeChanges().length;let h="";
+  if(restored&&n)h=`<div class="banner" role="note"><p><strong>We restored your draft with ${plural(n,"change")} from your last visit.</strong> Keep editing, apply it, or discard it.</p></div>`;
+  else if(lastEdit&&!n)h=`<div class="banner info" role="status">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="color:var(--new)" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+      <p><strong>${plural(lastEdit.count,"change")} applied</strong> by Admin - Shalina at ${lastEdit.when}.${lastEdit.reason?` Reason: “${esc(lastEdit.reason)}”`:""}</p>
+      <button class="btn btn-sm" id="viewLast">View in Audit Logs</button></div>`;
+  $("#bannerSlot").innerHTML=h;
+}
+function renderBar(){
+  const ch=computeChanges(),open=openEdits(),tabs=new Set(ch.map(c=>SEC_TAB[c.sec])),secs=new Set(ch.map(c=>c.col||c.sec));
+  $("#savebar").classList.toggle("show",!!(ch.length||open.length));
+  $("#sbCount").textContent=ch.length?`Draft · ${plural(ch.length,"change")} across ${plural(secs.size,"section")}${tabs.size>1?` in ${tabs.size} tabs`:""}`:"Draft is empty";
+  $("#sbMeta").innerHTML=open.length
+    ?`<span class="bad">${plural(open.length,"edit")} still open: ${open.map(k=>esc(unitLabel(k))).join(", ")}.</span> Save or cancel ${open.length>1?"them":"it"} before applying.`
+    :`Nothing is live yet. Apply sends every change to the vendor record in one update.${draftSavedAt?` Draft saved at ${draftSavedAt}.`:""}`;
+  $("#sbReview").disabled=!ch.length;
+}
+function persist(){
+  try{
+    if(computeChanges().length){
+      const d=clone(draft);["banks","addresses","tags"].forEach(c=>d[c]=d[c].filter(x=>!x._fresh));
+      draftSavedAt=new Date().toLocaleTimeString([], {hour:"numeric",minute:"2-digit"});
+      localStorage.setItem(LS_KEY,JSON.stringify({draft:d,at:draftSavedAt}));
+    }else{localStorage.removeItem(LS_KEY);draftSavedAt=null}
+  }catch(e){}
+}
+function renderAll(){renderHeader();renderTabs();renderBanner();renderContent();renderBar()}
+const rerender=renderAll;
+
+/* ---------- Tab content ---------- */
+function renderContent(){
+  const c=$("#content"),t=TABS.find(x=>x.id===tab);
+  c.setAttribute("role","tabpanel");c.setAttribute("aria-labelledby","tab-"+tab);
+  c.innerHTML=tab==="details"?renderDetails():tab==="bank"?renderBanks():tab==="address"?renderAddresses():tab==="tags"?renderTags():tab==="audit"?renderAudit()
+    :`<div class="empty"><h3>${t.label}</h3><p>This section isn't part of the prototype. Your draft changes in other tabs are kept while you look around.</p></div>`;
+  refreshAllFields();
+}
+function keyBtn(id,label,unit,ks){
+  const n=computeChanges().filter(c=>c.unit===unit&&ks.includes(c.k)).length;
+  return `<button class="btn-key${n?" is-changed":""}" data-medit="${id}">${n?'<span class="dot" aria-hidden="true"></span>':""}${label}${n?'<span class="sr"> (edited in draft)</span>':""}</button>`;
+}
+function renderDetails(){
+  const d=draft,ed=isEditing("details");
+  const msmeF={k:"udyam",label:"MSME"};
+  const grid=DEFS.details.flatMap(f=>{
+    const cell=ed?fieldInput("details",f):kvView("details",f);
+    if(f.k!=="pan")return [cell];
+    const m=ed?`<div class="field"><label>MSME</label><div class="ctl ctl-static"><span>${esc(show(d.msme.registered==="Yes"?d.msme.udyam:""))}</span><button type="button" class="btn btn-sm btn-ghost" data-medit="msme" style="color:var(--accent)">Edit MSME</button></div></div>`
+      :kvView("msme",msmeF);
+    return [cell,m];
+  }).join("");
+  const coordCard=()=>{
+    const c=d.coord,key="coord",has=c.lat||c.lng||unitChanges(key).length;
+    const body=isEditing(key)?`<p class="card-note">Used for geo-tagging deliveries and route tracking.</p>${fieldsGrid(key,"cols-2")}`:has?fieldsGrid(key,"cols-2"):"";
+    return cardShell({key,title:"Vendor Coordinate",head:`${editBtn(key)}<button class="btn btn-sm btn-outline" data-act="resetCoord">Reset Coordinate</button>`,body});
+  };
+  return `<div class="key-row">
+      ${keyBtn("key1","Edit Connection Key","conn",["key1"])}
+      ${keyBtn("key2","Edit Connection Key 2","conn",["key2"])}
+      ${keyBtn("msme","Edit Msme details","msme",["registered","udyam","category"])}
+    </div>
+    <div class="stack">
+    ${cardShell({key:"details",title:"Vendor Details",head:`${editBtn("details")}<button class="btn btn-sm btn-outline" data-act="status">Check Vendor Status</button>`,body:`<dl class="kv-grid cols-3">${grid}</dl>`})}
+    <div class="grid-2">
+      <div class="col">
+        ${addressCard(d.addresses.find(a=>a.id===d.defaultAddressId),true)}
+        ${coordCard()}
+      </div>
+      <div class="col">${bankCard(d.banks.find(b=>b.id===d.defaultBankId),true)}</div>
+    </div>
+  </div>`;
+}
+function defaultPills(kind,id){
+  const k=kind==="banks"?"defaultBankId":"defaultAddressId";
+  if(draft[k]!==id)return "";
+  return `<span class="pill pill-default">Default</span>${saved[k]!==id?`<span class="pill pill-edit">New default</span>`:""}`;
+}
+function bankCard(b,compact){
+  if(!b)return "";
+  const key="banks:"+b.id,s=saved.banks.find(x=>x.id===b.id),isNew=!s,isDef=draft.defaultBankId===b.id,off=b.active==="Inactive",ed=isEditing(key);
+  const mismatch=b.holder&&b.holder.trim().toUpperCase()!==draft.details.name.trim().toUpperCase();
+  const pills=defaultPills("banks",b.id)+(isNew?`<span class="pill pill-new">New</span>`:"")+(off?`<span class="pill pill-off">Inactive</span>`:"");
+  const extra=!ed&&!isNew&&!compact?`<dl class="kv-grid cols-2" style="margin-top:12px"><div class="kv"><dt>Valid Bank</dt><dd>${b.valid}</dd></div><div class="kv"><dt>Last Verified At</dt><dd>${b.verified}</dd></div></dl>`:"";
+  const tags=!ed&&!compact?`<div class="sub-h">Custom Tags</div><dl class="kv-grid cols-2"><div class="kv"><dt>BankAndVendorMatch</dt><dd>${mismatch?"false":"true"}${mismatch?`<span class="pill pill-warn" style="margin-left:6px">Name mismatch</span>`:""}</dd></div></dl>`:"";
+  const foot=compact?"":[
+    !isDef&&!off?`<button class="btn btn-sm" data-act="defBank" data-id="${b.id}">Make default</button>`:"",
+    isNew?`<button class="btn btn-sm btn-danger" data-act="rmNew" data-col="banks" data-id="${b.id}">Remove</button>`
+      :off?`<button class="btn btn-sm" data-act="toggleBank" data-id="${b.id}">Reactivate</button>`
+      :`<button class="btn btn-sm btn-danger" data-act="toggleBank" data-id="${b.id}" ${isDef?`disabled title="Make another account default first"`:""}>Deactivate</button>`,
+    !isNew?`<button class="btn btn-sm" data-act="toast" data-msg="Penny-drop verification started for ····${esc(String(b.account).slice(-4))}">Reverify Account</button>`:""
+  ].join("");
+  return cardShell({key,title:compact?"Bank Details":(b.holder||"New bank account"),pills,head:editBtn(key),body:fieldsGrid(key,"cols-2")+extra+tags,foot,cls:(isNew?"is-new":"")+(off?" is-off":"")});
+}
+function addressCard(a,compact){
+  if(!a)return "";
+  const key="addresses:"+a.id,s=saved.addresses.find(x=>x.id===a.id),isNew=!s,isDef=draft.defaultAddressId===a.id,off=a.active==="Inactive";
+  const title=compact?"Address Details":((a.line||"New address").split(",").slice(0,2).join(",").trim());
+  const pills=defaultPills("addresses",a.id)+(isNew?`<span class="pill pill-new">New</span>`:"")+(off?`<span class="pill pill-off">Inactive</span>`:"");
+  let head=editBtn(key);
+  if(!compact){
+    const menuId="menu-"+a.id;
+    head=`${!isDef&&!off?`<button class="btn btn-sm" data-act="defAddr" data-id="${a.id}">Make Default</button>`:""}${editBtn(key)}
+      <div class="menu-wrap"><button class="icon-btn kebab" data-menu="${menuId}" aria-haspopup="menu" aria-expanded="false" aria-label="More actions for ${esc(title)}"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg></button>
+        <div class="menu" id="${menuId}" role="menu" hidden>
+          ${isNew?`<button role="menuitem" class="danger" data-act="rmNew" data-col="addresses" data-id="${a.id}">Remove</button>`
+            :off?`<button role="menuitem" data-act="toggleAddr" data-id="${a.id}">Reactivate</button>`
+            :isDef?`<button role="menuitem" disabled title="Make another address default first" style="opacity:.45">Deactivate</button>`
+            :`<button role="menuitem" class="danger" data-act="toggleAddr" data-id="${a.id}">Deactivate</button>`}
+        </div></div>`;
+  }
+  return cardShell({key,title,pills,head,body:fieldsGrid(key,compact?"cols-3":"cols-2"),cls:(isNew?"is-new":"")+(off?" is-off":"")});
+}
+function renderBanks(){
+  return `<div class="stack"><div class="toolbar"><button class="btn btn-sm btn-primary" data-act="addBank">${PLUS}Add Bank</button></div>
+    <div class="grid-2">${draft.banks.map(b=>bankCard(b,false)).join("")}</div></div>`;
+}
+function renderAddresses(){
+  return `<div class="stack"><div class="toolbar"><button class="btn btn-sm btn-primary" data-act="addAddr">${PLUS}Add Address</button><button class="btn btn-sm btn-outline" data-act="toast" data-msg="CSV downloaded (prototype)">Download Csv</button></div>
+    <div class="grid-2">${draft.addresses.map(a=>addressCard(a,false)).join("")}</div></div>`;
+}
+function cellView(key,k){
+  const o=objOf(draft,key),s=objOf(saved,key),v=o[k]??"",chg=!!s&&(s[k]??"")!==v;
+  return chg?`<div class="cell-chg"><mark class="clip" style="display:-webkit-box">${esc(v)||"(empty)"}</mark><div class="was">Was <s title="${esc(s[k])}">${esc(s[k])||"(empty)"}</s><button type="button" data-undof="${key}|${k}">Undo</button></div></div>`:`<span class="clip">${esc(v)}</span>`;
+}
+function tagRow(t){
+  const key="tags:"+t.id,s=saved.tags.find(x=>x.id===t.id),isNew=!s,n=unitChanges(key).length;
+  if(t._deleted)return `<tr class="is-del"><td><span class="ro">${esc(s.key)}</span><div class="hint">Deleted when you apply</div></td><td class="val"><span class="ro clip">${esc(s.value)}</span></td>
+    <td><div class="row-actions"><button class="btn btn-sm" data-act="restoreTag" data-id="${t.id}">Restore</button></div></td></tr>`;
+  if(isEditing(key))return `<tr class="is-editing"><td>${fieldInput(key,DEFS.tags[0],true)}</td><td class="val">${fieldInput(key,DEFS.tags[1],true)}</td>
+    <td><div class="row-actions"><button class="btn btn-sm" data-cancel="${key}">Cancel</button><button class="btn btn-sm btn-primary" data-save="${key}">Save to draft</button></div></td></tr>`;
+  return `<tr class="${isNew?"is-new":n?"is-chg":""}">
+    <td>${cellView(key,"key")}${isNew?`<span class="pill pill-new">New</span>`:n?`<span class="pill pill-edit">Edited</span>`:""}</td>
+    <td class="val">${cellView(key,"value")}</td>
+    <td><div class="row-actions">
+      ${n||isNew?`<button class="btn btn-sm btn-ghost" data-undounit="${key}">Undo</button>`:""}
+      <button class="btn btn-sm btn-outline" data-edit="${key}" aria-label="Edit tag ${esc(t.key)}">${PENCIL}Edit</button>
+      <button class="btn btn-sm btn-danger" data-act="delTag" data-id="${t.id}" aria-label="Delete tag ${esc(t.key)}">${TRASH}Delete</button>
+    </div></td></tr>`;
+}
+function renderTags(){
+  return `<div class="stack">
+    <div class="toolbar">
+      <button class="btn btn-sm btn-primary" data-act="addTag">${PLUS}Add Tag</button>
+      <div class="menu-wrap"><button class="btn btn-sm btn-outline" data-menu="menu-predef" aria-haspopup="menu" aria-expanded="false">${PLUS}Add Predefined Tag</button>
+        <div class="menu left" id="menu-predef" role="menu" hidden><div class="menu-label">Predefined keys</div>
+          ${PREDEF.map(p=>{const used=draft.tags.some(t=>!t._deleted&&t.key===p);return `<button role="menuitem" data-act="addTag" data-key="${p}" ${used?'disabled style="opacity:.45" title="Already added"':""}>${p}</button>`}).join("")}
+        </div></div>
+    </div>
+    <div class="tbl-wrap"><table><thead><tr><th style="width:26%">Key</th><th>Value</th><th style="width:230px">Actions</th></tr></thead>
+      <tbody>${draft.tags.map(tagRow).join("")}</tbody></table></div>
+  </div>`;
+}
+
+/* ---------- Audit logs ---------- */
+const AU_SECS=["Vendor Details","MSME Details","Connection Keys","Vendor Coordinate","Bank","Address","Custom Tags"];
+const fmtTs=ts=>new Date(ts).toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"numeric",minute:"2-digit"});
+function auRows(){
+  const q=auQ.trim().toLowerCase();
+  return auditLog.map(h=>({h,rows:h.changes.filter(c=>(auSec==="all"||c.section===auSec)&&(!q||[c.label,c.entity,c.from,c.to,h.by,h.src,h.reason,h.id].join(" ").toLowerCase().includes(q)))})).filter(x=>x.rows.length);
+}
+function auListHTML(){
+  const list=auRows();
+  if(!list.length)return `<div class="empty"><h3>No matching changes</h3><p>Try a different section or search term.</p></div>`;
+  const val=c=>c.kind==="added"?`<td class="v">—</td><td class="v"><span class="new add clip">+ ${esc(c.to)}</span></td>`
+    :c.kind==="removed"?`<td class="v"><span class="old clip">${esc(c.from)}</span></td><td class="v"><span class="new del">Deleted</span></td>`
+    :`<td class="v"><span class="old clip" title="${esc(show(c.from))}">${esc(show(c.from))}</span></td><td class="v"><span class="new clip" title="${esc(show(c.to))}">${esc(show(c.to))}</span></td>`;
+  return list.map(({h,rows})=>`<div class="au-batch">
+    <div class="au-head"><div class="who"><b>${esc(h.by)}</b> ${h.by==="System"?`<span class="pill pill-sys">Automated</span>`:""} applied ${plural(h.changes.length,"change")}${rows.length<h.changes.length?` <span class="au-id">(${rows.length} shown)</span>`:""}
+      <div class="meta">${fmtTs(h.ts)} · ${esc(h.src)}</div>${h.reason?`<div class="rsn">Reason: “${esc(h.reason)}”</div>`:""}</div><span class="au-id">${esc(h.id)}</span></div>
+    <div style="overflow-x:auto"><table><thead><tr><th style="width:15%">Section</th><th style="width:18%">Field</th><th style="width:17%">Record</th><th style="width:25%">Old value</th><th style="width:25%">New value</th></tr></thead>
+    <tbody>${rows.map(c=>`<tr><td>${esc(c.section)}</td><td>${esc(c.label)}</td><td>${esc(c.entity)}</td>${val(c)}</tr>`).join("")}</tbody></table></div>
+  </div>`).join("");
+}
+function auSummary(){const l=auRows();return `${plural(l.length,"update")} · ${plural(l.reduce((n,x)=>n+x.rows.length,0),"field change")}`}
+function renderAudit(){
+  const pending=computeChanges().length;
+  return `<div class="stack">
+    ${pending?`<div class="banner" role="note"><p><strong>${plural(pending,"change")} in your draft</strong> will appear here once you apply them.</p><button class="btn btn-sm btn-primary" data-act="review">Review &amp; apply</button></div>`:""}
+    <div class="au-bar">
+      <label class="sr" for="auSec">Section</label>
+      <select class="ctl" id="auSec"><option value="all">All sections</option>${AU_SECS.map(x=>`<option ${x===auSec?"selected":""}>${x}</option>`).join("")}</select>
+      <label class="sr" for="auQ">Search changes</label>
+      <input class="ctl" id="auQ" type="search" placeholder="Search field, value, user…" value="${esc(auQ)}" autocomplete="off">
+      <button class="btn btn-sm btn-outline" data-act="toast" data-msg="Audit log exported as CSV (prototype)">Export Csv</button>
+      <span class="au-sum" id="auSum" role="status">${auSummary()}</span>
+    </div>
+    <div class="stack" id="auList" style="margin-top:0">${auListHTML()}</div>
+  </div>`;
+}
+function refreshAudit(){$("#auList").innerHTML=auListHTML();$("#auSum").textContent=auSummary()}
+$("#content").addEventListener("input",e=>{if(e.target.id==="auQ"){auQ=e.target.value;refreshAudit()}});
+$("#content").addEventListener("change",e=>{if(e.target.id==="auSec"){auSec=e.target.value;refreshAudit()}});
+
+/* ---------- Unit actions ---------- */
+function focusUnit(key){
+  const el=document.querySelector(`[data-unit="${CSS.escape(key)}"]:not([readonly])`);
+  if(el){el.focus();el.closest(".card,tr")?.scrollIntoView({block:"nearest"})}
+}
+function startEdit(key){closeMenus();buffers[key]=clone(objOf(draft,key));rerender();focusUnit(key)}
+function cancelUnit(key){
+  const o=objOf(draft,key),u=unitInfo(key);
+  if(o&&o._fresh)draft[u.col]=draft[u.col].filter(x=>x.id!==u.id);
+  delete buffers[key];showErr.delete(key);rerender();
+  document.querySelector(`[data-edit="${CSS.escape(key)}"]`)?.focus();
+}
+function saveUnit(key){
+  showErr.add(key);
+  const errs=unitErrors(key);
+  if(errs.length){refreshAllFields();document.getElementById(fid(key,errs[0].f.k))?.focus();return false}
+  const o=objOf(draft,key),b=buffers[key],wasFresh=!!o._fresh,before=computeChanges().length;
+  delete b._fresh;Object.assign(o,b);delete o._fresh;
+  delete buffers[key];showErr.delete(key);
+  rerender();persist();
+  const after=computeChanges().length;
+  toast(wasFresh?"Added to draft. Apply when you're ready.":after!==before?"Saved to draft. Apply when you're ready.":"No changes to save");
+  document.querySelector(`[data-edit="${CSS.escape(key)}"]`)?.focus();
+  return true;
+}
+function undoUnit(key){unitChanges(key).forEach(revert);rerender();persist()}
+function addItem(col,obj){
+  const id="n"+Date.now().toString(36)+(++uid),key=`${col}:${id}`;
+  draft[col].push({id,...obj,_fresh:true});buffers[key]=clone(objOf(draft,key));
+  rerender();focusUnit(key);
+}
+function onDraftChange(){rerender();persist()}
+
+/* ---------- Dialog editors: Connection Key, Connection Key 2, MSME — same draft as the cards ---------- */
+const MEDIT={
+  key1:{unit:"conn",only:["key1"],title:"Edit Connection Key",sub:"Key used to link this vendor with your ERP."},
+  key2:{unit:"conn",only:["key2"],title:"Edit Connection Key 2",sub:"Secondary key for a second ERP or entity."},
+  msme:{unit:"msme",title:"Edit Msme details",sub:"Udyam registration for 20CUBE. Payments to MSME vendors must be settled within 45 days."}
+};
+function openUnitModal(id){
+  const cfg=MEDIT[id],key=cfg.unit;
+  if(isEditing(key)&&modalUnit!==key){toast("Finish the open edit first");return}
+  closeMenus();buffers[key]=clone(objOf(draft,key));modalUnit=key;renderTabs();renderBar();
+  const body=()=>fieldsGrid(key,"cols-1",cfg.only);
+  openModal(`<div class="modal sm" role="dialog" aria-modal="true" aria-labelledby="umT" data-mid="${id}">
+    <div class="m-head"><div><h2 id="umT">${cfg.title}</h2><p>${cfg.sub}</p></div><button class="icon-btn" id="umX" aria-label="Close">${XICON}</button></div>
+    <div class="m-body" id="umBody">${body()}</div>
+    <div class="m-foot"><span class="foot-note">Saved to draft, not live yet.</span><button class="btn btn-sm" id="umCancel">Cancel</button><button class="btn btn-sm btn-primary" id="umSave">Save to draft</button></div>
+  </div>`,m=>{
+    refreshAllFields();
+    m.querySelector("#umX").onclick=closeModal;m.querySelector("#umCancel").onclick=closeModal;
+    m.querySelector("#umSave").onclick=modalSave;
+    m._rebody=()=>{m.querySelector("#umBody").innerHTML=body();refreshAllFields()};
+  });
+}
+function modalSave(){
+  const m=$("#modalSlot .modal"),id=m?.dataset.mid,key=modalUnit;
+  if(!key||!saveUnit(key))return;
+  modalUnit=null;$("#modalSlot").innerHTML="";
+  document.querySelector(`[data-medit="${id}"]`)?.focus();
+}
+
+/* ---------- Modals ---------- */
+let lastFocus=null;
+function openModal(html,onMount){
+  lastFocus=document.activeElement;
+  $("#modalSlot").innerHTML=`<div class="scrim" id="scrim">${html}</div>`;
+  const m=$("#modalSlot .modal");onMount&&onMount(m);
+  (m.querySelector("[autofocus]")||m.querySelector(".ctl:not([readonly])")||m.querySelector("button,textarea,input"))?.focus();
+  $("#scrim").addEventListener("mousedown",e=>{if(e.target.id==="scrim")closeModal()});
+}
+function closeModal(){
+  const id=$("#modalSlot .modal")?.dataset.mid;
+  $("#modalSlot").innerHTML="";
+  if(modalUnit){delete buffers[modalUnit];showErr.delete(modalUnit);modalUnit=null;rerender();document.querySelector(`[data-medit="${id}"]`)?.focus();return}
+  if(lastFocus&&document.contains(lastFocus))lastFocus.focus();
+}
+function confirmModal({title,body,ok,onOk}){
+  openModal(`<div class="modal sm" role="alertdialog" aria-modal="true" aria-labelledby="cmT"><div class="m-head"><div><h2 id="cmT">${title}</h2><p>${body}</p></div></div>
+    <div class="m-foot"><button class="btn btn-sm" id="cmNo" autofocus>Keep editing</button><button class="btn btn-sm btn-danger" id="cmOk">${ok}</button></div></div>`,m=>{
+    m.querySelector("#cmNo").onclick=closeModal;m.querySelector("#cmOk").onclick=()=>{closeModal();onOk()};
+  });
+}
+const secOf=c=>c.section||(c.col?SEC_NAME[c.col]:c.sec.startsWith("default")?SEC_NAME[c.sec==="defaultBankId"?"banks":"addresses"]:SEC_NAME[c.sec]);
+function diffRowsHTML(changes,withUndo){
+  const groups={};changes.forEach((c,i)=>{const g=secOf(c);(groups[g]=groups[g]||[]).push([c,i])});
+  return Object.entries(groups).map(([g,rows])=>`<div class="grp"><h4>${g}<span class="pill pill-edit">${rows.length}</span></h4><div class="diff">${rows.map(([c,i])=>`
+    <div class="diff-row"><div class="what">${esc(c.label)}<small>${esc(c.entity)}</small></div>
+      <div class="vals">${c.kind==="added"?`<span class="new add">+ ${esc(c.to)}</span>`:c.kind==="removed"?`<span class="new del">− ${esc(c.from)}</span>`:`<span class="old">${esc(show(c.from))}</span><span class="arrow" aria-label="changed to">→</span><span class="new">${esc(show(c.to))}</span>`}</div>
+      ${withUndo?`<button class="btn btn-sm btn-ghost" data-rv="${i}" aria-label="Undo ${esc(c.label)}">Undo</button>`:"<span></span>"}
+    </div>`).join("")}</div></div>`).join("");
+}
+function openReview(){
+  const ch=computeChanges();if(!ch.length){closeModal();return}
+  const open=openEdits(),warns=warnings(ch),prevReason=$("#reason")?.value||"",secs=new Set(ch.map(c=>c.col||c.sec)).size;
+  openModal(`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="rvT">
+    <div class="m-head"><div><h2 id="rvT">Review draft &amp; apply</h2><p>${plural(ch.length,"change")} across ${plural(secs,"section")} of ${esc(saved.details.name)}. They go live together in one update.</p></div>
+      <button class="icon-btn" id="rvX" aria-label="Close">${XICON}</button></div>
+    <div class="m-body">
+      ${open.length?`<div class="alert err" role="alert"><b>Finish ${plural(open.length,"open edit")} first</b><ul>${open.map(k=>`<li>${esc(unitLabel(k))} is still being edited. <a href="#" data-goedit="${k}">Go to it</a></li>`).join("")}</ul></div>`:""}
+      ${warns.length?`<div class="alert warn"><b>Before you apply</b><ul>${warns.map(w=>`<li>${w}</li>`).join("")}</ul></div>`:""}
+      ${diffRowsHTML(ch,true)}
+      <div class="reason"><label for="reason">Reason for change (shown in the vendor's audit log)</label><textarea id="reason" placeholder="e.g. Vendor shared updated bank letter dated 29 Sep 2026">${esc(prevReason)}</textarea></div>
+    </div>
+    <div class="m-foot"><button class="btn btn-sm" id="rvBack">Keep editing</button><button class="btn btn-sm btn-primary" id="rvSave" ${open.length?"disabled":""}>Apply ${plural(ch.length,"change")}</button></div>
+  </div>`,m=>{
+    m.querySelector("#rvX").onclick=closeModal;m.querySelector("#rvBack").onclick=closeModal;
+    m.querySelectorAll("[data-rv]").forEach(b=>b.onclick=()=>{const r=m.querySelector("#reason").value;revert(ch[+b.dataset.rv]);onDraftChange();openReview();const t=$("#reason");if(t)t.value=r});
+    m.querySelectorAll("[data-goedit]").forEach(a=>a.onclick=e=>{e.preventDefault();const k=a.dataset.goedit;closeModal();goTab(unitInfo(k).tab);focusUnit(k)});
+    m.querySelector("#rvSave").onclick=()=>doSubmit(m,ch);
+  });
+}
+function doSubmit(m,ch){
+  const btn=m.querySelector("#rvSave"),reason=m.querySelector("#reason").value.trim();
+  btn.disabled=true;btn.innerHTML=`<span class="spin" aria-hidden="true"></span>Applying…`;
+  setTimeout(()=>{
+    const next=clone(draft);
+    next.tags=next.tags.filter(t=>!t._deleted);
+    next.banks.forEach(b=>{const o=saved.banks.find(x=>x.id===b.id);if(!o||o.account!==b.account||o.ifsc!==b.ifsc||o.holder!==b.holder){b.valid="Pending verification";b.verified="—"}});
+    saved=next;draft=clone(next);buffers={};touched=new Set();showErr=new Set();restored=false;
+    const now=new Date();
+    auditLog.unshift({id:"AL-"+(10423+auditLog.filter(h=>h.by==="Admin - Shalina").length),ts:now.toISOString(),by:"Admin - Shalina",src:"Vendor profile · batch edit",reason,
+      changes:ch.map(c=>({kind:c.kind,section:secOf(c),label:c.label,entity:c.entity,from:c.from??"",to:c.to??""}))});
+    persistHist();
+    lastEdit={count:ch.length,when:new Date().toLocaleString([], {day:"2-digit",month:"short",hour:"numeric",minute:"2-digit"}),reason,changes:ch};
+    persist();closeModal();renderAll();toast(`${plural(ch.length,"change")} applied to ${saved.details.name}`);
+  },900);
+}
+function openLast(){
+  openModal(`<div class="modal" role="dialog" aria-modal="true" aria-labelledby="lsT"><div class="m-head"><div><h2 id="lsT">Last applied changes</h2><p>${plural(lastEdit.count,"change")} · ${lastEdit.when}</p></div><button class="icon-btn" id="lsX" aria-label="Close">${XICON}</button></div>
+    <div class="m-body">${diffRowsHTML(lastEdit.changes,false)}</div></div>`,m=>m.querySelector("#lsX").onclick=closeModal);
+}
+function requestDiscard(after){
+  const n=computeChanges().length,o=openEdits().length;
+  if(!n&&!o){after&&after();return}
+  confirmModal({title:"Discard the draft?",body:`This removes ${n?plural(n,"change")+" from your draft":""}${n&&o?" and closes ":""}${o?plural(o,"open edit"):""}. The vendor record stays as it is.`,ok:"Discard draft",
+    onOk:()=>{draft=clone(saved);buffers={};touched=new Set();showErr=new Set();restored=false;persist();renderAll();toast("Draft discarded");after&&after()}});
+}
+let toastT;
+function toast(msg){clearTimeout(toastT);$("#toastSlot").innerHTML=`<div class="toast" role="status"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>${esc(msg)}</div>`;toastT=setTimeout(()=>$("#toastSlot").innerHTML="",3200)}
+function closeMenus(){document.querySelectorAll(".menu").forEach(m=>m.hidden=true);document.querySelectorAll("[data-menu]").forEach(b=>b.setAttribute("aria-expanded","false"))}
+
+/* ---------- Events ---------- */
+function goTab(id){closeMenus();tab=id;renderTabs();renderContent();document.getElementById("tab-"+id)?.scrollIntoView({block:"nearest",inline:"nearest"})}
+$("#tabs").addEventListener("click",e=>{const b=e.target.closest("[data-tab]");if(b)goTab(b.dataset.tab)});
+$("#tabs").addEventListener("keydown",e=>{
+  if(!["ArrowRight","ArrowLeft"].includes(e.key))return;
+  const i=TABS.findIndex(t=>t.id===tab),n=TABS[(i+(e.key==="ArrowRight"?1:-1)+TABS.length)%TABS.length];goTab(n.id);document.getElementById("tab-"+n.id).focus();
+});
+// Field listeners live on document so card editors and dialog editors share them
+document.addEventListener("input",e=>{
+  const el=e.target,key=el.dataset?.unit;if(!key||!buffers[key])return;
+  const f=unitInfo(key).defs.find(x=>x.k===el.dataset.k);
+  buffers[key][f.k]=f.up?el.value.toUpperCase():el.value;
+  if(key==="msme"&&f.k==="registered"){
+    if(modalUnit==="msme")$("#modalSlot .modal")._rebody();else renderContent();
+    document.getElementById(fid(key,"registered"))?.focus();return;
+  }
+  refreshField(el.closest("[data-fu]"));
+});
+document.addEventListener("focusout",e=>{const el=e.target,key=el.dataset?.unit;if(key&&buffers[key]){touched.add(key+"|"+el.dataset.k);refreshField(el.closest("[data-fu]"))}});
+document.addEventListener("keydown",e=>{
+  const key=e.target.dataset?.unit;if(!key||!buffers[key])return;
+  if(e.key==="Enter"&&e.target.tagName==="INPUT"){e.preventDefault();modalUnit===key?modalSave():saveUnit(key)}
+  if(e.key==="Escape"&&modalUnit!==key){e.stopImmediatePropagation();cancelUnit(key)}
+});
+const content=$("#content");
+content.addEventListener("click",e=>{
+  const t=e.target;
+  const mb=t.closest("[data-menu]");
+  if(mb){const m=document.getElementById(mb.dataset.menu),was=!m.hidden;closeMenus();if(!was){m.hidden=false;mb.setAttribute("aria-expanded","true");m.querySelector("button:not([disabled])")?.focus()}return}
+  let x;
+  if((x=t.closest("[data-medit]")))return openUnitModal(x.dataset.medit);
+  if((x=t.closest("[data-edit]")))return startEdit(x.dataset.edit);
+  if((x=t.closest("[data-save]")))return saveUnit(x.dataset.save);
+  if((x=t.closest("[data-cancel]")))return cancelUnit(x.dataset.cancel);
+  if((x=t.closest("[data-undounit]")))return undoUnit(x.dataset.undounit);
+  if((x=t.closest("[data-undof]"))){const [key,k]=x.dataset.undof.split("|");objOf(draft,key)[k]=objOf(saved,key)[k]??"";return onDraftChange()}
+  if((x=t.closest("[data-revbuf]")))return revBuf(x);
+  const a=t.closest("[data-act]");if(!a||a.disabled)return;
+  closeMenus();
+  const id=a.dataset.id,act=a.dataset.act;
+  if(act==="toast")return toast(a.dataset.msg);
+  if(act==="review")return openReview();
+  if(act==="status")return toast(`GSTIN ${saved.details.gstin} is ${saved.details.gstinStatus} on the GST portal`);
+  if(act==="addBank")return addItem("banks",{holder:"",account:"",ifsc:"",branch:"",active:"Active",valid:"—",verified:"—"});
+  if(act==="addAddr")return addItem("addresses",{line:"",city:"",state:"TAMIL NADU",pin:"",country:"India",locationId:"",filterKey:"",active:"Active"});
+  if(act==="addTag")return addItem("tags",{key:a.dataset.key||"",value:""});
+  if(act==="resetCoord"){if(!draft.coord.lat&&!draft.coord.lng)return toast("No coordinate to reset");draft.coord={lat:"",lng:""}}
+  if(act==="defBank")draft.defaultBankId=id;
+  if(act==="defAddr")draft.defaultAddressId=id;
+  if(act==="toggleBank"){const b=draft.banks.find(y=>y.id===id);b.active=b.active==="Active"?"Inactive":"Active"}
+  if(act==="toggleAddr"){const y=draft.addresses.find(z=>z.id===id);y.active=y.active==="Active"?"Inactive":"Active"}
+  if(act==="rmNew")revert({kind:"added",col:a.dataset.col,id,unit:`${a.dataset.col}:${id}`});
+  if(act==="delTag"){delete buffers["tags:"+id];if(!saved.tags.find(y=>y.id===id))draft.tags=draft.tags.filter(y=>y.id!==id);else draft.tags.find(y=>y.id===id)._deleted=true}
+  if(act==="restoreTag")delete draft.tags.find(y=>y.id===id)._deleted;
+  onDraftChange();
+  if(["defBank","defAddr","toggleBank","toggleAddr","resetCoord"].includes(act))toast("Saved to draft. Apply when you're ready.");
+});
+function revBuf(x){const [key,k]=x.dataset.revbuf.split("|");buffers[key][k]=objOf(saved,key)[k]??"";const ctl=document.getElementById(fid(key,k));ctl.value=buffers[key][k];refreshField(ctl.closest("[data-fu]"));ctl.focus()}
+$("#modalSlot").addEventListener("click",e=>{const x=e.target.closest("[data-revbuf]");if(x)revBuf(x)});
+document.addEventListener("click",e=>{
+  if(!e.target.closest(".menu-wrap"))closeMenus();
+  if(e.target.closest("#viewLast"))goTab("audit");
+});
+$("#backBtn").onclick=()=>requestDiscard(()=>toast("Back to vendor list (prototype)"));
+$("#sbDiscard").onclick=()=>requestDiscard();
+$("#sbReview").onclick=openReview;
+document.addEventListener("keydown",e=>{
+  const modal=$("#modalSlot").innerHTML;
+  if(e.key==="Escape"){if(modal){closeModal();return}if(document.querySelector(".menu:not([hidden])")){closeMenus();return}}
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="s"){e.preventDefault();if(!modal&&computeChanges().length)openReview()}
+  if(e.key==="Tab"&&modal){
+    const f=[...document.querySelectorAll("#modalSlot button:not([disabled]),#modalSlot textarea,#modalSlot input:not([readonly]),#modalSlot select,#modalSlot a[href]")];if(!f.length)return;
+    if(e.shiftKey&&document.activeElement===f[0]){e.preventDefault();f[f.length-1].focus()}
+    else if(!e.shiftKey&&document.activeElement===f[f.length-1]){e.preventDefault();f[0].focus()}
+  }
+});
+
+/* ---------- Boot: restore a saved draft if present ---------- */
+try{const s=JSON.parse(localStorage.getItem(LS_KEY)||"null");if(s&&s.draft){draft=s.draft;draftSavedAt=s.at;restored=true}}catch(e){}
+renderAll();
+</script>
+</body>
+</html>
